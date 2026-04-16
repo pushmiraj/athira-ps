@@ -1,20 +1,22 @@
-# Environment
-.env
-venv/
-env/
+# Python
 __pycache__/
 *.pyc
-
-# IDEs
-.vscode/
-.idea/
-
-# DB
+*.pyo
+.env
 *.db
-*.sqlite3
+*.db-journal
+.venv/
+venv/
+
+# Alembic
+alembic/versions/*.py
+!alembic/versions/.gitkeep
 
 # Node
 node_modules/
 dist/
-build/
+.env.local
+
+# OS
 .DS_Store
+Thumbs.db
