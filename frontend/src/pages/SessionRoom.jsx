@@ -31,7 +31,7 @@ export default function SessionRoom() {
   const [showStudyPack, setShowStudyPack] = useState(false)
 
   const { send, wsRef } = useWebSocket(id)
-  const { isListening, startListening, stopListening } = useTranscript(send)
+  const { isListening, interimText, startListening, stopListening } = useTranscript(send)
   const whiteboardPngRef = useRef(null)
 
   useTimer(status === 'live')
@@ -53,13 +53,13 @@ export default function SessionRoom() {
 
   // Start transcript listening when live
   useEffect(() => {
-    if (status === 'live' && !isListening) {
+    if (status === 'live') {
       startListening()
-    }
-    if (status !== 'live' && isListening) {
+    } else {
       stopListening()
     }
-  }, [status])
+    // Only re-run when status changes to prevent startListening() infinite loops if mic is rejected
+  }, [status, startListening, stopListening])
 
   // Show study pack when session completes
   useEffect(() => {
@@ -202,7 +202,7 @@ export default function SessionRoom() {
             {isListening ? '⏹ Stop' : '🎙 Start Listening'}
           </button>
         </div>
-        <TranscriptPanel />
+        <TranscriptPanel interimText={interimText} />
       </div>
     </div>
   )
