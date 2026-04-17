@@ -80,6 +80,10 @@ export default function useWebSocket(sessionId) {
           useSessionStore.getState().addTranscriptSegment(payload)
         }
         break
+      case 'TRANSCRIPT_PROCESSED':
+        // Backend Groq has cleaned this segment — update it in our buffer
+        useSessionStore.getState().updateTranscriptSegment(payload)
+        break
 
       // ── Text Editor ────────────────────────────────────────────────────
       case WS.TEXT_EDITOR_UPDATE:

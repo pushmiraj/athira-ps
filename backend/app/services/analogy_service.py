@@ -58,7 +58,21 @@ async def generate_context_tag(transcript_snippet: str) -> str:
 
 
 async def _call_ai(system: str, user: str) -> str:
-    if settings.AI_PROVIDER == "anthropic":
+    provider = settings.AI_PROVIDER.lower()
+    if provider == "groq":
+        from groq import AsyncGroq
+        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+        resp = await client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            max_tokens=512,
+            temperature=0.7,
+        )
+        return resp.choices[0].message.content.strip()
+    elif provider == "anthropic":
         import anthropic
         client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         msg = await client.messages.create(
@@ -68,7 +82,7 @@ async def _call_ai(system: str, user: str) -> str:
             messages=[{"role": "user", "content": user}],
         )
         return msg.content[0].text
-    elif settings.AI_PROVIDER == "gemini":
+    elif provider == "gemini":
         from google import genai
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         response = client.models.generate_content(
@@ -92,3 +106,4 @@ async def _call_ai(system: str, user: str) -> str:
             max_tokens=512,
         )
         return resp.choices[0].message.content
+

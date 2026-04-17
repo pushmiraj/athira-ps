@@ -5,6 +5,7 @@ const useSessionStore = create((set, get) => ({
   status: 'idle',        // idle | preflight | live | completed
   participants: {},      // { [user_id]: { name, role, connected } }
   transcriptBuffer: [],  // rolling buffer of transcript segments
+  latestSummary: null,   // latest AI-generated transcript summary
   sessionContract: null,
   proficiency: [],
   elapsedMs: 0,
@@ -15,6 +16,7 @@ const useSessionStore = create((set, get) => ({
   setSessionContract: (contract) => set({ sessionContract: contract }),
   setProficiency: (proficiency) => set({ proficiency }),
   setEditorText: (text) => set({ editorText: text }),
+  setLatestSummary: (summary) => set({ latestSummary: summary }),
 
   addParticipant: (participant) => set((state) => ({
     participants: {
@@ -35,6 +37,20 @@ const useSessionStore = create((set, get) => ({
     return { transcriptBuffer: buffer.slice(-60) }
   }),
 
+  // Called when backend sends back the Groq-processed version of a segment
+  updateTranscriptSegment: (payload) => set((state) => {
+    const updated = state.transcriptBuffer.map(seg => {
+      if (
+        seg.timestamp_ms === payload.timestamp_ms &&
+        seg.speaker_id === payload.speaker_id
+      ) {
+        return { ...seg, processed_text: payload.processed_text }
+      }
+      return seg
+    })
+    return { transcriptBuffer: updated }
+  }),
+
   getLastNTranscript: (n = 20) => {
     const buf = get().transcriptBuffer
     return buf.slice(-n).map(s => s.text).join(' ')
@@ -51,8 +67,9 @@ const useSessionStore = create((set, get) => ({
 
   reset: () => set({
     session: null, status: 'idle', participants: {}, transcriptBuffer: [],
-    sessionContract: null, proficiency: [], elapsedMs: 0, editorText: ''
+    latestSummary: null, sessionContract: null, proficiency: [], elapsedMs: 0, editorText: ''
   }),
 }))
 
 export default useSessionStore
+

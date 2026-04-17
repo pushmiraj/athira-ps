@@ -79,6 +79,17 @@ async def update_status(
         session.started_at = datetime.utcnow()
     if body.status == "completed":
         session.ended_at = datetime.utcnow()
+        # Fire async task to generate summary
+        import asyncio
+        from app.services.transcript_service import generate_full_session_summary
+        from app.database import AsyncSessionLocal
+        
+        async def background_summary():
+            async with AsyncSessionLocal() as bg_db:
+                await generate_full_session_summary(session_id, bg_db)
+                
+        asyncio.create_task(background_summary())
+        
     await db.commit()
     await db.refresh(session)
     return session

@@ -44,6 +44,7 @@ class StudyPackService:
             "session_id": session_id,
             "topic": session.topic if session else "",
             "session_contract": session.session_contract if session else "",
+            "session_summary": getattr(session, "session_summary", ""),
             "proficiency": [
                 {
                     "sub_topic": p.sub_topic,
@@ -105,6 +106,17 @@ class StudyPackService:
         notes_html = "".join(
             f'<p>📝 {n["content"]}</p>' for n in data["reflection_notes"]
         )
+        
+        # Format the markdown summary into simple HTML paragraphs
+        summary_text = data.get("session_summary", "")
+        summary_html = ""
+        if summary_text:
+            import markdown
+            try:
+                summary_html = markdown.markdown(summary_text)
+            except:
+                summary_html = f"<pre style='white-space: pre-wrap; font-family: inherit;'>{summary_text}</pre>"
+            summary_html = f'<div class="summary"><h3>AI Session Summary</h3>{summary_html}</div>'
 
         return f"""<!DOCTYPE html>
 <html>
@@ -112,18 +124,21 @@ class StudyPackService:
   <meta charset="UTF-8">
   <title>Study Pack — {data['topic']}</title>
   <style>
-    body {{ font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; color: #0F172A; }}
-    h1 {{ color: #2563EB; }} h2 {{ color: #1D4ED8; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }}
+    body {{ font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; color: #0F172A; line-height: 1.6; }}
+    h1 {{ color: #2563EB; }} h2 {{ color: #1D4ED8; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; margin-top: 32px; }}
     .contract {{ background: #EFF6FF; border-left: 4px solid #2563EB; padding: 12px 16px; border-radius: 4px; margin: 16px 0; }}
-    .snapshot {{ background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 12px 0; }}
+    .summary {{ background: #F8FAFC; border: 1px solid #CBD5E1; padding: 24px; border-radius: 12px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }}
+    .summary h3 {{ margin-top: 0; color: #475569; }}
+    .snapshot {{ background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }}
     .intent {{ background: #F0FDF4; border-left: 3px solid #16A34A; padding: 8px 12px; margin-top: 8px; border-radius: 4px; }}
     .transcript {{ color: #64748B; font-size: 0.875rem; font-style: italic; }}
-    ul {{ padding-left: 1.5rem; }} li {{ margin: 6px 0; }}
+    ul {{ padding-left: 1.5rem; }} li {{ margin: 8px 0; }}
   </style>
 </head>
 <body>
   <h1>📚 Study Pack: {data['topic']}</h1>
   <div class="contract"><strong>Session Contract:</strong> {data['session_contract']}</div>
+  {summary_html}
   <h2>📸 Snapshots ({len(data['snapshots'])})</h2>
   {snapshots_html or '<p>No snapshots captured.</p>'}
   <h2>🅿️ Parked Questions ({len(data['parked_questions'])})</h2>
@@ -132,3 +147,4 @@ class StudyPackService:
   {notes_html or '<p>No notes written.</p>'}
 </body>
 </html>"""
+

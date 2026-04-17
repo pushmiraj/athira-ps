@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
-    AI_PROVIDER: str = "gemini"
+    GROQ_API_KEY: str = ""
+    AI_PROVIDER: str = "groq"   # groq | gemini | openai | anthropic
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = "http://localhost:5173"
 

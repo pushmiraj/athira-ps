@@ -14,6 +14,7 @@ class TutoringSession(Base):
     sub_topics = Column(JSON, nullable=True)
     status = Column(String(20), default="scheduled")
     session_contract = Column(Text, nullable=True)
+    session_summary = Column(Text, nullable=True)
     scheduled_at = Column(DateTime, nullable=False)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)

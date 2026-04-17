@@ -49,9 +49,23 @@ export default function StudyPackModal({ sessionId, onClose }) {
           ) : (
             <>
               {data.session_contract && (
-                <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-blue-400 mb-1 uppercase tracking-wider">Session Contract</p>
-                  <p className="text-sm text-blue-200">{data.session_contract}</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-blue-600 mb-1 uppercase tracking-wider">Session Contract</p>
+                  <p className="text-sm text-slate-800">{data.session_contract}</p>
+                </div>
+              )}
+
+              {data.session_summary && (
+                <div className="bg-fuchsia-50 border border-fuchsia-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 blur-[1px]">
+                    <span className="text-6xl">✨</span>
+                  </div>
+                  <p className="text-xs font-semibold text-fuchsia-600 mb-2 uppercase tracking-wider flex items-center pr-12">
+                    <span className="mr-1.5">✨</span> AI Full Session Summary
+                  </p>
+                  <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap relative z-10">
+                    {data.session_summary}
+                  </div>
                 </div>
               )}
 

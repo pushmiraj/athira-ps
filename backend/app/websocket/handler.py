@@ -434,7 +434,7 @@ async def handle_transcript(data: dict, session_id: str, user: dict):
             "text": text,
             "timestamp_ms": timestamp_ms,
         })
-        # Persist final segments asynchronously
+        # Persist final segment
         async with AsyncSessionLocal() as db:
             seg = TranscriptSegment(
                 session_id=session_id,
@@ -446,7 +446,18 @@ async def handle_transcript(data: dict, session_id: str, user: dict):
             db.add(seg)
             await db.commit()
 
-    # Broadcast to all other participants
+        # Fire async Groq cleanup — does NOT block the broadcast below
+        import asyncio
+        asyncio.create_task(_process_and_rebroadcast(
+            session_id=session_id,
+            raw_text=text,
+            speaker_id=user["id"],
+            speaker_role=user["role"],
+            timestamp_ms=timestamp_ms,
+        ))
+        print(f"[Transcript] Final segment received ({len(text)} chars), LLM processing queued.")
+
+    # Immediately broadcast raw text to all other participants
     await manager.broadcast(session_id, "TRANSCRIPT_BROADCAST", {
         "speaker_id": user["id"],
         "speaker_role": user["role"],
@@ -456,9 +467,37 @@ async def handle_transcript(data: dict, session_id: str, user: dict):
     }, exclude_conn_id=user["conn_id"])
 
 
+async def _process_and_rebroadcast(
+    session_id: str,
+    raw_text: str,
+    speaker_id: str,
+    speaker_role: str,
+    timestamp_ms: int,
+):
+    """
+    Call Groq to clean/structure the raw speech segment, then broadcast
+    TRANSCRIPT_PROCESSED so all clients can update their display.
+    """
+    try:
+        from app.services.transcript_service import process_segment
+        processed = await process_segment(raw_text)
+        print(f"[Transcript] LLM processed: '{raw_text[:40]}' → '{processed[:40]}'")
+        await manager.broadcast(session_id, "TRANSCRIPT_PROCESSED", {
+            "speaker_id": speaker_id,
+            "speaker_role": speaker_role,
+            "raw_text": raw_text,
+            "processed_text": processed,
+            "timestamp_ms": timestamp_ms,
+        })
+    except Exception as e:
+        print(f"[Transcript] LLM processing failed for session {session_id}: {e}")
+        # No fallback needed — frontend already shows raw text
+
+
 # ─── Whiteboard ───────────────────────────────────────────────────────────────
 
 async def handle_whiteboard(data: dict, session_id: str, user: dict):
     payload = data.get("payload", {})
     # Relay to all other participants
     await manager.broadcast(session_id, "WHITEBOARD_UPDATE", payload, exclude_conn_id=user["conn_id"])
+

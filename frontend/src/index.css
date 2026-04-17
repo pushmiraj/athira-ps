@@ -1,27 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
-  --color-primary:        #2563EB;
-  --color-primary-light:  #EFF6FF;
-  --color-primary-dark:   #1D4ED8;
+  /* Brand */
+  --accent:           #4F46E5;
+  --accent-dark:      #3730A3;
+  --accent-light:     #EEF2FF;
+
+  /* Diagnostic colors */
   --color-mastered:       #16A34A;
   --color-lucky-guess:    #CA8A04;
   --color-known-gap:      #DC2626;
   --color-danger-zone:    #7C3AED;
+
+  /* Auth / Dashboard surfaces (stay light) */
   --color-surface:        #F8FAFC;
   --color-border:         #E2E8F0;
   --color-text-primary:   #0F172A;
   --color-text-secondary: #64748B;
-  --color-session-bg:     #0F172A;
-  --color-session-panel:  #1E293B;
-  --color-session-border: #334155;
+
+  /* ─── SESSION ROOM — Light Theme ─── */
+  --color-session-bg:        #F1F5F9;   /* soft blue-gray canvas */
+  --color-session-panel:     #FFFFFF;   /* white cards */
+  --color-session-border:    #CBD5E1;   /* slate-300 */
+  --color-session-text:      #1E293B;   /* slate-800 */
+  --color-session-muted:     #64748B;   /* slate-500 */
+  --color-session-header:    #FFFFFF;
+  --color-session-accent:    #4F46E5;
+  --color-session-accent-bg: #EEF2FF;
+
+  /* Panel shadow */
+  --panel-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --panel-shadow-drag: 0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', 'DM Sans', sans-serif;
   color: var(--color-text-primary);
   background: #fff;
   -webkit-font-smoothing: antialiased;
@@ -29,6 +45,85 @@ body {
 
 code, .mono { font-family: 'DM Mono', monospace; }
 
+/* ── Panel card base ─────────────────────────────── */
+.panel-card {
+  background: var(--color-session-panel);
+  border: 1px solid var(--color-session-border);
+  border-radius: 16px;
+  box-shadow: var(--panel-shadow);
+  overflow: hidden;
+}
+
+/* ── Drag handle ─────────────────────────────────── */
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+
+/* ── Resize handle (bottom-right corner) ────────── */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 4px;
+  z-index: 10;
+}
+.resize-handle::after {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--color-session-border);
+  border-bottom: 2px solid var(--color-session-border);
+  border-radius: 0 0 3px 0;
+}
+
+/* ── Floating panel dragging state ──────────────── */
+.panel-dragging {
+  box-shadow: var(--panel-shadow-drag) !important;
+  opacity: 0.96;
+  transition: none !important;
+}
+
+/* ── Whiteboard tool button ─────────────────────── */
+.wb-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  color: var(--color-session-muted);
+  position: relative;
+}
+.wb-tool:hover { background: var(--color-session-accent-bg); color: var(--accent); }
+.wb-tool.active { background: var(--accent); color: #fff; }
+
+/* ── Video control button ───────────────────────── */
+.vc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  border: none;
+}
+.vc-btn:hover { transform: scale(1.08); }
+.vc-btn:active { transform: scale(0.95); }
+
+/* ── Diagnostic animations ──────────────────────── */
 @keyframes pulse-danger {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
   50%       { opacity: 0.85; box-shadow: 0 0 0 8px rgba(124,58,237,0); }
@@ -40,3 +135,9 @@ code, .mono { font-family: 'DM Mono', monospace; }
   to   { transform: translateX(0);    opacity: 1; }
 }
 .slide-in-right { animation: slide-in-right 0.3s ease-out; }
+
+@keyframes panel-pop {
+  from { transform: scale(0.97); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.panel-pop { animation: panel-pop 0.2s ease-out; }

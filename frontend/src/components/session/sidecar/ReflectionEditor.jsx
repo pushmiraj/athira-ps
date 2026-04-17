@@ -17,29 +17,34 @@ export default function ReflectionEditor({ send }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div>
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Write a private note, mnemonic, or reflection…"
           rows={4}
-          className="w-full bg-slate-800/60 border border-slate-600 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none shadow-sm"
         />
-        <button
-          onClick={handleSave}
-          disabled={!text.trim()}
-          className="mt-2 px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs font-medium disabled:opacity-40 transition-colors"
-        >
-          Save Note
-        </button>
+        <div className="flex justify-end mt-2">
+          <button
+            onClick={handleSave}
+            disabled={!text.trim()}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors shadow-sm"
+          >
+            Save Note
+          </button>
+        </div>
       </div>
 
       {reflectionNotes.length > 0 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-2.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1 relative">
+          <div className="sticky top-0 bg-white pb-2 mb-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Past Notes</h4>
+          </div>
           {reflectionNotes.map((note, i) => (
-            <div key={i} className="bg-slate-800/40 border border-slate-700 rounded-lg px-3 py-2">
-              <p className="text-xs text-slate-300 leading-relaxed">{note.content}</p>
+            <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-lg px-3.5 py-3">
+              <p className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap">{note.content}</p>
             </div>
           ))}
         </div>
