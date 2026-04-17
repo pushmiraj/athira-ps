@@ -1,102 +1,65 @@
-# Athira — Live Session Innovation Workspace
+# Athira EdTech Platform
 
-> Transforming the 60-minute tutoring session from a generic video call into a high-signal, collaborative learning environment.
+A zero-dependency, ultra-fast real-time tutoring platform leveraging native browser capabilities and WebSockets.
 
-## Quick Start
+## 🚀 Key Features
 
-### Backend
-```bash
-cd backend
+*   **Native P2P Video Communication**: Uses fully native WebRTC (via WebSocket signaling) to establish video/audio streams, eliminating expensive 3rd-party dependencies like Daily.co.
+*   **Zero-Dependency Collaborative Whiteboard**: A completely custom HTML5 `<canvas>` whiteboard that supports real-time multi-user strokes, drawing, dynamic color/size selection, and text-box overlays synchronized over WebSockets.
+*   **Real-time Live Transcript**: Integrates the native Browser Web Speech API to transcribe sessions live. Interim strings and optimized debouncing handle UI buffering seamlessly while broadcasting to students in real-time.
+*   **Live Collaborative Code/Text Editor**: A low-latency text sink allowing the tutor and student to instantly share document states dynamically.
+*   **Gemini AI Diagnostics Engine**: Utilizes Google's `gemini-2.5-flash` to evaluate check-in tests, process learning analytics, and generate immediate educational analogies dynamically parsed over WebSockets.
 
-# Create and activate virtual environment
-python -m venv venv
+---
 
-# Windows
-venv\Scripts\activate
+## 🛠️ Tech Stack
 
-# macOS / Linux
-source venv/bin/activate
+**Frontend**
+*   React (Vite)
+*   Zustand (Global Session State & Buffer Management)
+*   Tailwind CSS (UI & Layouts)
 
-pip install -r requirements.txt
-cp .env.example .env   # fill in your API keys
-uvicorn main:app --reload --port 8000
-```
+**Backend**
+*   Python (FastAPI)
+*   Uvicorn (ASGI Server)
+*   SQLite + SQLAlchemy (Database/ORM)
 
-### Frontend
-```bash
-cd frontend
-npm install
-cp .env.example .env   # set VITE_API_BASE_URL and VITE_WS_BASE_URL
-npm run dev            # opens at http://localhost:5173
-```
+---
 
-## Feature Overview
+## 💻 Local Setup Instructions
 
-| Feature | Description |
-|---|---|
-| Pre-Flight Diagnostic | AI-generated 5-question MCQ with confidence slider; produces 2×2 Confidence Gap Matrix |
-| Sidecar | Student-only panel: Snapshots, Parking Lot, Reflection Notes; Tutor Intent Tags via 10s async toast |
-| Analogy Engine | "Help Me Explain" → 3-modality AI analogies → student selection poll → cognitive signal logging |
-| Study Pack | Post-session artifact: all snapshots + parked questions + notes + session contract, exportable as HTML |
+### 1. Backend Setup
+1.  Navigate into the backend directory: `cd backend`
+2.  Set up your Python virtual environment:
+    ```bash
+    python -m venv venv
+    .\venv\Scripts\activate  # On Windows
+    ```
+3.  Install dependencies: `pip install -r requirements.txt`
+4.  Configure Environment Variables:
+    *   Create a `.env` file in the `backend/` directory.
+    *   Add your Gemini API Key: `GEMINI_API_KEY=your_key_here`
+5.  Run the server:
+    ```bash
+    python -m uvicorn main:app --reload
+    ```
+    *(The backend runs on `localhost:8000`)*
 
-## WebSocket Event Schema
+### 2. Frontend Setup
+1.  Navigate into the frontend directory: `cd frontend`
+2.  Install packages: `npm install`
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+    *(The frontend usually runs on `http://localhost:5173`)*
 
-All messages use this envelope:
-```json
-{ "event": "EVENT_TYPE", "session_id": "uuid", "sender_id": "uuid", "sender_role": "student|tutor", "timestamp_ms": 1234567890, "payload": {} }
-```
+---
 
-### Connection
-```
-WS: ws://localhost:8000/ws/{session_id}?token={jwt_token}
-```
+## 🏗️ How Real-Time State Works
 
-### Events
+All real-time collaboration (Whiteboard, Text Editor, WebRTC Signaling) routes through a single unified `WebSocket` connection (`backend/app/websocket/handler.py`).
 
-| Event | Direction | Description |
-|---|---|---|
-| `PARTICIPANT_JOINED` | server→all | User connected to session |
-| `PARTICIPANT_LEFT` | server→all | User disconnected |
-| `SESSION_STATUS_CHANGED` | server→all | Status: preflight→live→completed |
-| `DIAGNOSTIC_ANSWER_SUBMITTED` | student→server | Student submits answer + confidence |
-| `DIAGNOSTIC_PROGRESS` | server→tutor | Live progress after each answer |
-| `DIAGNOSTIC_COMPLETE` | server→tutor | All answers done; includes proficiency array + contract |
-| `SNAPSHOT_TAKEN` | student→server | Whiteboard PNG + transcript snippet captured |
-| `SNAPSHOT_CONFIRMED` | server→student | Snapshot stored with AI context tag |
-| `TUTOR_INTENT_PROMPT` | server→tutor | 10-second window to annotate snapshot |
-| `TUTOR_INTENT_ADDED` | tutor→server | Tutor submits intent text |
-| `SNAPSHOT_ENRICHED` | server→student | Tutor's annotation attached to snapshot |
-| `QUESTION_PARKED` | student→server | Student parks a question with transcript context |
-| `QUESTION_PARKED_CONFIRMED` | server→student | Park stored |
-| `REFLECTION_SAVED` | student→server | Private note saved |
-| `ANALOGY_REQUESTED` | tutor→server | Trigger AI analogy generation |
-| `ANALOGIES_READY` | server→tutor | 3 modality analogies returned |
-| `ANALOGY_ERROR` | server→tutor | AI generation failed (graceful degrade) |
-| `ANALOGY_POLL_SEND` | tutor→server | Push analogy poll to student |
-| `ANALOGY_POLL_RECEIVED` | server→student | Student receives 3-option poll |
-| `ANALOGY_SELECTED` | student→server | Student picks a modality |
-| `ANALOGY_SELECTION_RECEIVED` | server→tutor | Highlights chosen card |
-| `ANALOGY_WORKED` | student→server | "This clicked!" cognitive signal |
-| `TRANSCRIPT_SEGMENT` | both→server | Speech Recognition segment |
-| `TRANSCRIPT_BROADCAST` | server→both | Relay transcript to other participant |
-| `WHITEBOARD_DELTA` | both→server | Excalidraw canvas change |
-| `WHITEBOARD_UPDATE` | server→both | Relay whiteboard to other participant |
+The client connects and listens to events via `frontend/src/hooks/useWebSocket.js`. When a local action occurs (like drawing a stroke), the client packages a custom envelope (e.g., `WHITEBOARD_DELTA`) and sends it.
 
-## Architecture
-
-**Synchronization Strategy:** Server-relay model. All events pass through the FastAPI backend — never peer-to-peer. The `ConnectionManager` maintains `active_connections: Dict[session_id, Dict[user_id, WebSocket]]` and delivers events role-scoped (`send_to_role`) or user-scoped (`send_to_user`), ensuring the sidecar is architecturally private, not just hidden on the frontend.
-
-**In-memory session state:** Active transcript buffers (rolling 60-segment window) live in server memory for low-latency AI access. Persistent data (snapshots, parked questions, analogy logs) is written to SQLite/PostgreSQL asynchronously.
-
-**Pedagogical Reasoning:**
-- **Pre-Flight Diagnostic** — Bloom's Taxonomy: baseline assessment before instruction
-- **Danger Zone Quadrant** — Constructivism: confidently wrong students resist correction; must surface explicitly
-- **Parking Lot** — Cognitive load theory: defer unresolved questions, address in structured batch
-- **Analogy Modality Selection** — Felder-Silverman cognitive styles: match explanation to learner's dominant mode
-- **Session Contract** — Locke & Latham goal-setting theory: explicit shared goals improve focus
-
-## Stack
-
-**Backend:** FastAPI · SQLAlchemy (async) · SQLite/PostgreSQL · JWT Auth · OpenAI/Anthropic API  
-**Frontend:** Vite + React 18 · Tailwind CSS · Zustand · Excalidraw · Web Speech API  
-**Deployment:** Railway.app (backend) · Vercel (frontend)
+The Python backend `ConnectionManager` dynamically caches the connection pool and securely broadcasts the exact payload to the peer using a precise `exclude_conn_id` mechanism (which safely allows local testing with multi-tabs on the same development account)!
