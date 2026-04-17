@@ -81,6 +81,11 @@ export default function useWebSocket(sessionId) {
         }
         break
 
+      // ── Text Editor ────────────────────────────────────────────────────
+      case WS.TEXT_EDITOR_UPDATE:
+        useSessionStore.getState().setEditorText(payload.content)
+        break
+
       // ── Whiteboard — handled directly in SharedWhiteboard component ────
       default:
         break

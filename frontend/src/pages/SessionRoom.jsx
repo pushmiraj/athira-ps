@@ -16,6 +16,7 @@ import AnalogyPanel from '../components/session/analogy/AnalogyPanel'
 import AnalogyPoll from '../components/session/analogy/AnalogyPoll'
 import VideoPane from '../components/session/video/VideoPane'
 import SharedWhiteboard from '../components/session/whiteboard/SharedWhiteboard'
+import SharedTextEditor from '../components/session/editor/SharedTextEditor'
 import SessionHeader from '../components/session/layout/SessionHeader'
 import DualPane from '../components/session/layout/DualPane'
 import StudyPackModal from '../components/session/studypack/StudyPackModal'
@@ -29,6 +30,7 @@ export default function SessionRoom() {
   const { reset: resetSidecar } = useSidecarStore()
   const [loading, setLoading] = useState(true)
   const [showStudyPack, setShowStudyPack] = useState(false)
+  const [activeTab, setActiveTab] = useState('whiteboard')
 
   const { send, wsRef } = useWebSocket(id)
   const { isListening, interimText, startListening, stopListening } = useTranscript(send)
@@ -183,7 +185,33 @@ export default function SessionRoom() {
   const leftPane = (
     <div className="flex flex-col h-full">
       <VideoPane send={send} wsRef={wsRef} />
-      <SharedWhiteboard send={send} wsRef={wsRef} getRef={whiteboardPngRef} />
+
+      {/* Workspace Tabs */}
+      <div className="flex bg-slate-800 border-b border-slate-700">
+        <button
+          onClick={() => setActiveTab('whiteboard')}
+          className={`flex-1 py-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${activeTab === 'whiteboard' ? 'bg-slate-700 text-blue-400 border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'
+            }`}
+        >
+          Whiteboard
+        </button>
+        <button
+          onClick={() => setActiveTab('editor')}
+          className={`flex-1 py-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${activeTab === 'editor' ? 'bg-slate-700 text-blue-400 border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'
+            }`}
+        >
+          Text Editor
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-[300px] bg-slate-900 border-b border-slate-700 overflow-hidden relative">
+        <div style={{ display: activeTab === 'whiteboard' ? 'block' : 'none', height: '100%' }}>
+          <SharedWhiteboard send={send} wsRef={wsRef} getRef={whiteboardPngRef} />
+        </div>
+        <div style={{ display: activeTab === 'editor' ? 'block' : 'none', height: '100%' }}>
+          <SharedTextEditor send={send} wsRef={wsRef} />
+        </div>
+      </div>
       {/* Transcript section */}
       <div className="border-t border-slate-700" style={{ background: 'var(--color-session-panel)' }}>
         {/* Transcript toggle bar */}

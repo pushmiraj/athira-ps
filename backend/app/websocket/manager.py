@@ -17,15 +17,20 @@ class ConnectionManager:
         await websocket.accept()
         if session_id not in self.active_connections:
             self.active_connections[session_id] = {}
-        self.active_connections[session_id][user_id] = {
+            
+        # Use a true unique connection ID so a single user can have multiple testing tabs open
+        conn_id = str(id(websocket))
+        self.active_connections[session_id][conn_id] = {
             "ws": websocket,
+            "user_id": user_id,
             "role": role,
             "name": name,
         }
 
-    async def disconnect(self, session_id: str, user_id: str):
+    async def disconnect(self, session_id: str, websocket: WebSocket):
+        conn_id = str(id(websocket))
         if session_id in self.active_connections:
-            self.active_connections[session_id].pop(user_id, None)
+            self.active_connections[session_id].pop(conn_id, None)
             if not self.active_connections[session_id]:
                 del self.active_connections[session_id]
 
@@ -55,14 +60,17 @@ class ConnectionManager:
                 except Exception:
                     pass
 
-    async def broadcast(self, session_id: str, event: str, payload: dict, exclude_user_id: str = None):
+    async def broadcast(self, session_id: str, event: str, payload: dict, exclude_conn_id: str = None):
+        sent_count = 0
         for uid, conn in self.active_connections.get(session_id, {}).items():
-            if uid == exclude_user_id:
+            if uid == exclude_conn_id:
                 continue
             try:
                 await conn["ws"].send_json(self._make_envelope(session_id, event, payload))
+                sent_count += 1
             except Exception:
                 pass
+        print(f"[WS] Broadcasted {event} to {sent_count} peers (excluded conn_id: {exclude_conn_id})")
 
     def append_transcript(self, session_id: str, segment: dict):
         if session_id not in self.transcript_buffers:

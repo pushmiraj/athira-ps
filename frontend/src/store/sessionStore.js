@@ -8,11 +8,13 @@ const useSessionStore = create((set, get) => ({
   sessionContract: null,
   proficiency: [],
   elapsedMs: 0,
+  editorText: '',
 
   setSession: (session) => set({ session, status: session?.status || 'idle' }),
   setStatus: (status) => set({ status }),
   setSessionContract: (contract) => set({ sessionContract: contract }),
   setProficiency: (proficiency) => set({ proficiency }),
+  setEditorText: (text) => set({ editorText: text }),
 
   addParticipant: (participant) => set((state) => ({
     participants: {
@@ -49,7 +51,7 @@ const useSessionStore = create((set, get) => ({
 
   reset: () => set({
     session: null, status: 'idle', participants: {}, transcriptBuffer: [],
-    sessionContract: null, proficiency: [], elapsedMs: 0,
+    sessionContract: null, proficiency: [], elapsedMs: 0, editorText: ''
   }),
 }))
 

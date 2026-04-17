@@ -11,7 +11,8 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   const lastPoint = useRef(null)
   const [color, setColor] = useState('#ffffff')
   const [size, setSize] = useState(4)
-  const [tool, setTool] = useState('pen') // pen | eraser
+  const [tool, setTool] = useState('pen') // pen | eraser | text
+  const [textInput, setTextInput] = useState(null) // { x, y, value }
   const strokesRef = useRef([])         // full history for PNG export
   const currentStroke = useRef(null)
 
@@ -48,6 +49,15 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   }, [])
 
   function drawStroke(ctx, stroke) {
+    if (stroke.tool === 'text') {
+      ctx.save()
+      ctx.font = `${stroke.size * 4}px monospace`
+      ctx.fillStyle = stroke.color
+      ctx.fillText(stroke.text, stroke.x, stroke.y)
+      ctx.restore()
+      return
+    }
+
     if (!stroke.points || stroke.points.length < 2) return
     ctx.save()
     ctx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
@@ -76,9 +86,16 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   }
 
   function handleStart(e) {
-    e.preventDefault()
-    isDrawing.current = true
+    if (e.target.tagName?.toLowerCase() === 'input') return
+    // e.preventDefault() // removed to allow input focus
+
     const pt = getCanvasPoint(e)
+    if (tool === 'text') {
+      setTextInput({ x: pt.x, y: pt.y, value: '' })
+      return
+    }
+
+    isDrawing.current = true
     lastPoint.current = pt
     currentStroke.current = {
       color: tool === 'eraser' ? '#000' : color,
@@ -126,6 +143,24 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
     strokesRef.current = []
     redrawAll()
     send(WS.WHITEBOARD_DELTA, { clear: true })
+  }
+
+  function handleTextSubmit() {
+    if (!textInput) return
+    if (textInput.value.trim() !== '') {
+      const stroke = {
+        tool: 'text',
+        color: color,
+        size: size,
+        x: textInput.x,
+        y: textInput.y,
+        text: textInput.value
+      }
+      strokesRef.current.push(stroke)
+      send(WS.WHITEBOARD_DELTA, { stroke })
+      redrawAll()
+    }
+    setTextInput(null)
   }
 
   // Listen for remote whiteboard events
@@ -177,6 +212,11 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
             className={`px-2 py-1 rounded text-xs transition-colors ${tool === 'eraser' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
               }`}
           >🧹 Eraser</button>
+          <button
+            onClick={() => setTool('text')}
+            className={`px-2 py-1 rounded text-xs transition-colors border ${tool === 'text' ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-700 text-slate-400 border-transparent hover:text-white'
+              }`}
+          >T Text</button>
         </div>
 
         <div className="w-px h-5 bg-slate-600" />
@@ -223,7 +263,7 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 min-h-0 relative bg-slate-900 cursor-crosshair">
+      <div className={`flex-1 min-h-0 relative bg-slate-900 ${tool === 'text' ? 'cursor-text' : 'cursor-crosshair'}`}>
         <canvas
           ref={canvasRef}
           onMouseDown={handleStart}
@@ -235,6 +275,31 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
           onTouchEnd={handleEnd}
           className="absolute inset-0 w-full h-full"
         />
+        {textInput && (
+          <input
+            autoFocus
+            type="text"
+            value={textInput.value}
+            onChange={(e) => setTextInput({ ...textInput, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleTextSubmit()
+            }}
+            onBlur={handleTextSubmit}
+            style={{
+              position: 'absolute',
+              left: `${textInput.x}px`,
+              top: `${textInput.y - (size * 4)}px`,
+              color: color,
+              fontSize: `${size * 4}px`,
+              fontFamily: 'monospace',
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px dashed #3b82f6',
+              outline: 'none',
+              minWidth: '100px',
+              zIndex: 100
+            }}
+          />
+        )}
       </div>
     </div>
   )

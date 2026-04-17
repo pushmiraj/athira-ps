@@ -41,6 +41,7 @@ async def websocket_endpoint(
         await websocket.close(code=4001)
         return
 
+    user["conn_id"] = str(id(websocket))
     await manager.connect(session_id, user["id"], user["role"], user["name"], websocket)
 
     # Notify others that this participant joined
@@ -48,7 +49,7 @@ async def websocket_endpoint(
         session_id,
         "PARTICIPANT_JOINED",
         {"user_id": user["id"], "role": user["role"], "name": user["name"]},
-        exclude_user_id=user["id"],
+        exclude_conn_id=user["conn_id"],
     )
 
     # Send current participants list to the new joiner
@@ -103,13 +104,17 @@ async def websocket_endpoint(
 
                 # ─── WebRTC Signaling (relay to other peer) ─────────────
                 case "WEBRTC_OFFER":
-                    await manager.broadcast(session_id, "WEBRTC_OFFER", payload, exclude_user_id=user["id"])
+                    await manager.broadcast(session_id, "WEBRTC_OFFER", payload, exclude_conn_id=user["conn_id"])
 
                 case "WEBRTC_ANSWER":
-                    await manager.broadcast(session_id, "WEBRTC_ANSWER", payload, exclude_user_id=user["id"])
+                    await manager.broadcast(session_id, "WEBRTC_ANSWER", payload, exclude_conn_id=user["conn_id"])
 
                 case "WEBRTC_ICE_CANDIDATE":
-                    await manager.broadcast(session_id, "WEBRTC_ICE_CANDIDATE", payload, exclude_user_id=user["id"])
+                    await manager.broadcast(session_id, "WEBRTC_ICE_CANDIDATE", payload, exclude_conn_id=user["conn_id"])
+
+                # ─── Text Editor Syncing ─────────────
+                case "TEXT_EDITOR_DELTA":
+                    await manager.broadcast(session_id, "TEXT_EDITOR_UPDATE", payload, exclude_conn_id=user["conn_id"])
 
                 case _:
                     pass  # Unknown event — ignore
@@ -448,7 +453,7 @@ async def handle_transcript(data: dict, session_id: str, user: dict):
         "text": text,
         "timestamp_ms": timestamp_ms,
         "is_final": is_final,
-    }, exclude_user_id=user["id"])
+    }, exclude_conn_id=user["conn_id"])
 
 
 # ─── Whiteboard ───────────────────────────────────────────────────────────────
@@ -456,4 +461,4 @@ async def handle_transcript(data: dict, session_id: str, user: dict):
 async def handle_whiteboard(data: dict, session_id: str, user: dict):
     payload = data.get("payload", {})
     # Relay to all other participants
-    await manager.broadcast(session_id, "WHITEBOARD_UPDATE", payload, exclude_user_id=user["id"])
+    await manager.broadcast(session_id, "WHITEBOARD_UPDATE", payload, exclude_conn_id=user["conn_id"])
