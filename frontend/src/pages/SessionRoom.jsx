@@ -140,8 +140,15 @@ export default function SessionRoom() {
   }, [startListening, stopListening])
 
   useEffect(() => {
-    if (status === 'completed') { stopListening(); setShowStudyPack(true) }
-  }, [status])
+    if (status === 'live') {
+      // Auto-start transcript when session goes live
+      startListening()
+    }
+    if (status === 'completed') {
+      stopListening()
+      setShowStudyPack(true)
+    }
+  }, [status, startListening, stopListening])
 
   async function handleStartPreflight() { await api.patch(`/sessions/${id}/status`, { status: 'preflight' }); setStatus('preflight') }
   async function handleStartLive() { await api.patch(`/sessions/${id}/status`, { status: 'live' }); setStatus('live'); send('SESSION_STATUS_CHANGED', { new_status: 'live' }) }
@@ -324,19 +331,14 @@ export default function SessionRoom() {
                                     <span className="text-xl">🎙</span>
                                     <span className="font-display font-bold text-sm text-on-surface tracking-wide uppercase">Transcript</span>
                                 </div>
-                                <button 
-                                    onClick={isListening ? stopListening : startListening}
-                                    className={`px-3 py-1 rounded text-xs font-bold uppercase transition-colors ${
-                                      isListening ? 'bg-error-container text-error' : 'bg-surface-container text-on-surface hover:bg-outline-variant'
-                                    }`}
-                                >
-                                    {isListening ? 'Stop' : 'Start'}
-                                </button>
+                                {isListening && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-error-container">
+                                        <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
+                                        <span className="text-xs font-semibold text-error uppercase tracking-wide">Recording</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar-light relative">
-                                {isListening && (
-                                    <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_8px_rgba(186,26,26,0.6)]" />
-                                )}
                                 <div className="p-2"><TranscriptPanel interimText={interimText} error={transcriptError} /></div>
                             </div>
                         </div>

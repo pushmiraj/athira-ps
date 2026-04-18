@@ -25,7 +25,7 @@ export default function TranscriptPanel({ interimText, error }) {
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                     <div className="text-2xl mb-2 grayscale opacity-60">🎙️</div>
                     <p className="text-sm text-slate-500 font-medium">Live transcript will appear here</p>
-                    <p className="text-xs text-slate-500 mt-1">Click "🎙 Start Listening" above to start</p>
+                    <p className="text-xs text-slate-500 mt-1">Automatically recording when session is live</p>
                 </div>
             )}
 
