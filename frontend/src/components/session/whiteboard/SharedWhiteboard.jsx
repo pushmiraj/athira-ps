@@ -39,6 +39,15 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   const strokesRef = useRef([])
   const currentStroke = useRef(null)
 
+  const redrawAll = useCallback(() => {
+    const ctx = ctxRef.current
+    const canvas = canvasRef.current
+    if (!ctx || !canvas) return
+    const dpr = window.devicePixelRatio || 1
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr)
+    for (const stroke of strokesRef.current) drawStroke(ctx, stroke)
+  }, [])
+
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current
@@ -71,15 +80,6 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
       observer.disconnect()
     }
   }, [redrawAll])
-
-  const redrawAll = useCallback(() => {
-    const ctx = ctxRef.current
-    const canvas = canvasRef.current
-    if (!ctx || !canvas) return
-    const dpr = window.devicePixelRatio || 1
-    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr)
-    for (const stroke of strokesRef.current) drawStroke(ctx, stroke)
-  }, [])
 
   function drawStroke(ctx, stroke) {
     ctx.save()
