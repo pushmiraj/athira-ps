@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as WS from '../../../lib/wsEvents'
 
-const COLORS = ['#1e293b', '#ef4444', '#4f46e5', '#16a34a', '#f59e0b', '#a855f7', '#0ea5e9', '#f97316', '#ec4899']
+const COLORS = ['#ffffff', '#a5b4fc', '#4f46e5', '#34d399', '#fcd34d', '#f472b6', '#38bdf8', '#fb923c', '#fb7185']
 const SIZES = [2, 5, 10, 18]
 
 // ── Tool icon SVGs ──────────────────────────────────────────────
@@ -32,7 +32,7 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   const startPoint = useRef(null)
   const lastPoint = useRef(null)
   const snapshotRef = useRef(null) // for shape preview
-  const [color, setColor] = useState('#1e293b')
+  const [color, setColor] = useState('#ffffff')
   const [size, setSize] = useState(5)
   const [tool, setTool] = useState('pen')
   const [textInput, setTextInput] = useState(null)
@@ -230,20 +230,19 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
   }, [getRef])
 
   return (
-    <div className="flex h-full w-full min-h-0" style={{ background: '#f8fafc' }}>
+    <div className="flex h-full w-full min-h-0 bg-transparent">
       {/* ── Vertical toolbar ── */}
-      <div className="flex flex-col items-center gap-1 py-3 px-2"
-        style={{ background: '#fff', borderRight: '1px solid #e2e8f0', width: 60, flexShrink: 0 }}>
+      <div className="flex flex-col items-center gap-2 py-4 px-2 bg-black/40 backdrop-blur-md shrink-0 w-16 border-r border-white/10 relative z-10 shrink-0">
         {/* Tools */}
         {TOOLS.map(t => (
           <button key={t.id} title={t.label} onClick={() => setTool(t.id)}
-            className="wb-tool" style={{ color: tool === t.id ? '#fff' : '#64748b', background: tool === t.id ? '#4f46e5' : 'transparent' }}>
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-transparent" style={{ color: tool === t.id ? '#fff' : 'rgba(255,255,255,0.4)', background: tool === t.id ? '#4f46e5' : 'transparent' }}>
             {ToolIcons[t.id]}
           </button>
         ))}
 
         {/* Divider */}
-        <div style={{ width: 32, height: 1, background: '#e2e8f0', margin: '4px 0' }} />
+        <div className="w-8 h-px bg-white/10 my-2" />
 
         {/* Color swatches */}
         <div className="flex flex-col gap-1.5 items-center">
@@ -258,7 +257,7 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
         </div>
 
         {/* Divider */}
-        <div style={{ width: 32, height: 1, background: '#e2e8f0', margin: '4px 0' }} />
+        <div className="w-8 h-px bg-white/10 my-2" />
 
         {/* Stroke sizes */}
         {SIZES.map(s => (
@@ -272,10 +271,9 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
           </button>
         ))}
 
-        {/* Clear */}
         <div style={{ flex: 1 }} />
         <button title="Clear all" onClick={handleClear}
-          style={{ width: 40, height: 40, borderRadius: 12, background: '#fef2f2', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          className="w-10 h-10 rounded-xl bg-error-container/20 text-error flex items-center justify-center hover:bg-error-container/40 transition-colors">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
           </svg>
@@ -283,8 +281,7 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
       </div>
 
       {/* ── Canvas area ── */}
-      <div className={`flex-1 relative ${tool === 'text' ? 'cursor-text' : 'cursor-crosshair'}`}
-        style={{ background: '#fff', minHeight: 0 }}>
+      <div className={`flex-1 relative ${tool === 'text' ? 'cursor-text' : 'cursor-crosshair'} bg-transparent overflow-hidden min-h-0`}>
         <canvas
           ref={canvasRef}
           onMouseDown={handleStart} onMouseMove={handleMove} onMouseUp={handleEnd} onMouseLeave={handleEnd}

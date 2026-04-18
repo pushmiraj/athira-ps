@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import useAuthStore from '../store/authStore'
 import * as WS from '../lib/wsEvents'
 
 const ICE_SERVERS = [
@@ -15,8 +16,12 @@ export default function useWebRTC(send, wsRef) {
     const [isConnected, setIsConnected] = useState(false)
     const [isMuted, setIsMuted] = useState(false)
     const [isCamOff, setIsCamOff] = useState(false)
-    const pendingCandidates = useRef([])
-    const isNegotiating = useRef(false)
+    const { user } = useAuthStore()
+
+    // Perfect negotiation state
+    const makingOffer = useRef(false)
+    const ignoreOffer = useRef(false)
+    const isPolite = user?.role === 'student'
 
     // Create peer connection
     const createPeerConnection = useCallback(() => {
@@ -43,25 +48,22 @@ export default function useWebRTC(send, wsRef) {
         pc.onconnectionstatechange = () => {
             setIsConnected(pc.connectionState === 'connected')
             if (pc.connectionState === 'failed') {
-                // Auto-restart on failure
                 cleanup()
                 setTimeout(() => startCall(), 2000)
             }
         }
 
         pc.onnegotiationneeded = async () => {
-            if (isNegotiating.current) return
-            isNegotiating.current = true
             try {
-                const offer = await pc.createOffer()
-                await pc.setLocalDescription(offer)
+                makingOffer.current = true
+                await pc.setLocalDescription()
                 send(WS.WEBRTC_OFFER, {
                     sdp: pc.localDescription.toJSON(),
                 })
             } catch (err) {
                 console.error('Negotiation failed:', err)
             } finally {
-                isNegotiating.current = false
+                makingOffer.current = false
             }
         }
 
@@ -91,76 +93,69 @@ export default function useWebRTC(send, wsRef) {
 
     // Handle incoming WebRTC signaling messages
     const handleSignaling = useCallback(async (event, payload) => {
+        const pc = createPeerConnection()
+
         switch (event) {
-            case WS.WEBRTC_OFFER: {
-                const pc = createPeerConnection()
-
-                // Add local stream if not already added
-                if (localStreamRef.current) {
-                    const senders = pc.getSenders()
-                    if (senders.length === 0) {
-                        localStreamRef.current.getTracks().forEach((track) => {
-                            pc.addTrack(track, localStreamRef.current)
-                        })
-                    }
-                } else {
-                    // Start local media if not started
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({
-                            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-                            audio: true,
-                        })
-                        localStreamRef.current = stream
-                        setLocalStream(stream)
-                        stream.getTracks().forEach((track) => {
-                            pc.addTrack(track, stream)
-                        })
-                    } catch (err) {
-                        console.error('Failed to get media for answer:', err)
-                    }
-                }
-
-                await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
-
-                // Flush pending ICE candidates
-                for (const c of pendingCandidates.current) {
-                    await pc.addIceCandidate(new RTCIceCandidate(c))
-                }
-                pendingCandidates.current = []
-
-                const answer = await pc.createAnswer()
-                await pc.setLocalDescription(answer)
-                send(WS.WEBRTC_ANSWER, {
-                    sdp: pc.localDescription.toJSON(),
-                })
-                break
-            }
-
+            case WS.WEBRTC_OFFER:
             case WS.WEBRTC_ANSWER: {
-                const pc = pcRef.current
-                if (pc) {
+                const isOffer = event === WS.WEBRTC_OFFER
+                const offerCollision = isOffer && (makingOffer.current || pc.signalingState !== 'stable')
+                ignoreOffer.current = !isPolite && offerCollision
+                if (ignoreOffer.current) return
+
+                try {
                     await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
-                    // Flush pending ICE candidates
-                    for (const c of pendingCandidates.current) {
-                        await pc.addIceCandidate(new RTCIceCandidate(c))
+                    if (isOffer) {
+                        // Ensure local tracks are added before answering
+                        if (!localStreamRef.current) {
+                            try {
+                                const stream = await navigator.mediaDevices.getUserMedia({
+                                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                                    audio: true,
+                                })
+                                localStreamRef.current = stream
+                                setLocalStream(stream)
+                                stream.getTracks().forEach((track) => pc.addTrack(track, stream))
+                            } catch (err) {
+                                console.error('Failed to get media for answer:', err)
+                            }
+                        } else {
+                            const senders = pc.getSenders()
+                            if (senders.length === 0) {
+                                localStreamRef.current.getTracks().forEach((track) => pc.addTrack(track, localStreamRef.current))
+                            }
+                        }
+
+                        await pc.setLocalDescription()
+                        send(WS.WEBRTC_ANSWER, { sdp: pc.localDescription.toJSON() })
                     }
-                    pendingCandidates.current = []
+                } catch (err) {
+                    console.error('Failed to set remote description:', err)
                 }
                 break
             }
 
             case WS.WEBRTC_ICE_CANDIDATE: {
-                const pc = pcRef.current
-                if (pc && pc.remoteDescription) {
-                    await pc.addIceCandidate(new RTCIceCandidate(payload.candidate))
-                } else {
-                    // Queue if remote description not set yet
-                    pendingCandidates.current.push(payload.candidate)
+                try {
+                    // Only drop candidates if we are ignoring an offer
+                    if (ignoreOffer.current && pc.signalingState === 'stable') return
+                    
+                    if (pc.remoteDescription) {
+                        await pc.addIceCandidate(new RTCIceCandidate(payload.candidate))
+                    } else {
+                        // In perfect negotiation with polite peer, if we don't have remote description yet
+                        // the browser automatically queues candidates in some implementations,
+                        // but setting polite/impolite pattern resolves most race conditions.
+                        // We do a manual re-queue fallback just in case.
+                        setTimeout(() => pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(console.error), 2000)
+                    }
+                } catch (err) {
+                    console.error('Failed to add ICE candidate:', err)
                 }
                 break
             }
         }
-    }, [createPeerConnection, send])
+    }, [createPeerConnection, send, isPolite])
 
     // Media controls
     const toggleMute = useCallback(() => {
@@ -196,8 +191,8 @@ export default function useWebRTC(send, wsRef) {
         }
         setRemoteStream(null)
         setIsConnected(false)
-        pendingCandidates.current = []
-        isNegotiating.current = false
+        makingOffer.current = false
+        ignoreOffer.current = false
     }, [])
 
     // Cleanup on unmount
