@@ -74,7 +74,7 @@ export default function SharedWhiteboard({ send, wsRef, getRef }) {
       resize()
     })
     observer.observe(canvas.parentElement)
-    
+
     return () => {
       if (canvas.parentElement) observer.unobserve(canvas.parentElement)
       observer.disconnect()

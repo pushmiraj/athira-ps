@@ -14,23 +14,14 @@ export default function StudentDashboard() {
     api.get('/sessions').then(r => setSessions(r.data)).catch(() => { })
   }, [])
 
-  const [bookingError, setBookingError] = useState(null)
-
   async function handleBook(sessionData) {
-    setBookingError(null)
-    try {
-      const { data } = await api.post('/sessions', sessionData)
-      setSessions(s => [...s, data])
-      api.post(`/diagnostic/${data.id}/generate`, {
-        topic: data.topic,
-        sub_topics: data.sub_topics || [],
-      }).catch(() => { })
-      setShowBooking(false)
-    } catch (err) {
-      const msg = err?.response?.data?.detail || err?.message || 'Booking failed. Please try again.'
-      setBookingError(msg)
-      alert('Booking Error: ' + msg)
-    }
+    const { data } = await api.post('/sessions', sessionData)
+    setSessions(s => [...s, data])
+    api.post(`/diagnostic/${data.id}/generate`, {
+      topic: data.topic,
+      sub_topics: data.sub_topics || [],
+    }).catch(() => { })
+    setShowBooking(false)
   }
 
   const upcoming = sessions.filter(s => s.status === 'scheduled' || s.status === 'preflight' || s.status === 'live')

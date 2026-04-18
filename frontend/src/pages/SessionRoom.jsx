@@ -18,6 +18,7 @@ import AnalogyPoll from '../components/session/analogy/AnalogyPoll'
 import VideoPane from '../components/session/video/VideoPane'
 import SharedWhiteboard from '../components/session/whiteboard/SharedWhiteboard'
 import SharedTextEditor from '../components/session/editor/SharedTextEditor'
+import CodeCompiler from '../components/session/compiler/CodeCompiler'
 import StudyPackModal from '../components/session/studypack/StudyPackModal'
 import TranscriptPanel from '../components/session/transcript/TranscriptPanel'
 
@@ -260,24 +261,24 @@ export default function SessionRoom() {
           <VideoPane send={send} wsRef={wsRef} onCallStarted={handleCallStarted} onMuteChange={handleMuteChange} />
         </FloatingPanel>
 
-        {/* ── Workspace Panel (Whiteboard + Editor) ── */}
+        {/* ── Workspace Panel (Whiteboard + Editor + Code Compiler) ── */}
         <FloatingPanel
           id="panel-workspace"
-          title={activeTab === 'whiteboard' ? 'Whiteboard' : 'Text Editor'}
-          icon={activeTab === 'whiteboard' ? '✏️' : '📝'}
+          title={activeTab === 'whiteboard' ? 'Whiteboard' : activeTab === 'editor' ? 'Text Editor' : 'Code Compiler'}
+          icon={activeTab === 'whiteboard' ? '✏️' : activeTab === 'editor' ? '📝' : '💻'}
           defaultPos={{ x: 420, y: 16 }}
-          defaultSize={{ w: 640, h: 500 }}
-          minWidth={380} minHeight={300}
+          defaultSize={{ w: 720, h: 580 }}
+          minWidth={500} minHeight={400}
           headerRight={
             <div className="no-drag" style={{ display: 'flex', gap: 4 }}>
-              {['whiteboard', 'editor'].map(tab => (
+              {['whiteboard', 'editor', 'compiler'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   style={{
                     padding: '4px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                     background: activeTab === tab ? '#4f46e5' : '#f1f5f9',
                     color: activeTab === tab ? '#fff' : '#64748b',
                   }}>
-                  {tab === 'whiteboard' ? '✏️ Whiteboard' : '📝 Editor'}
+                  {tab === 'whiteboard' ? '✏️ Whiteboard' : tab === 'editor' ? '📝 Editor' : '💻 Compiler'}
                 </button>
               ))}
             </div>
@@ -289,6 +290,9 @@ export default function SessionRoom() {
             </div>
             <div style={{ display: activeTab === 'editor' ? 'block' : 'none', height: '100%' }}>
               <SharedTextEditor send={send} wsRef={wsRef} />
+            </div>
+            <div style={{ display: activeTab === 'compiler' ? 'block' : 'none', height: '100%' }}>
+              <CodeCompiler send={send} wsRef={wsRef} isTutor={isTutor} />
             </div>
           </div>
         </FloatingPanel>
