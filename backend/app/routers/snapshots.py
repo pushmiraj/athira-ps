@@ -33,6 +33,20 @@ async def create_snapshot(
     return snapshot
 
 
+@router.get("/snapshots/student/all", response_model=list[SnapshotOut])
+async def get_all_student_snapshots(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get all snapshots for the current student across all sessions"""
+    result = await db.execute(
+        select(Snapshot)
+        .where(Snapshot.student_id == current_user.id)
+        .order_by(Snapshot.created_at.desc())
+    )
+    return result.scalars().all()
+
+
 @router.get("/snapshots/{session_id}", response_model=list[SnapshotOut])
 async def get_snapshots(
     session_id: str,

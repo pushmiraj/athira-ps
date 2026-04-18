@@ -11,6 +11,8 @@ class Snapshot(Base):
     session_id = Column(String, ForeignKey("tutoring_sessions.id"), nullable=False)
     student_id = Column(String, ForeignKey("users.id"), nullable=False)
     whiteboard_png = Column(Text, nullable=True)
+    full_page_png = Column(Text, nullable=True)  # Full page screenshot
+    note = Column(Text, nullable=True)  # Student's reflection note
     transcript_snippet = Column(Text, nullable=True)
     timestamp_ms = Column(BigInteger, nullable=False)
     ai_context_tag = Column(Text, nullable=True)

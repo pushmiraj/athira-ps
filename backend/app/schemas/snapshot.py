@@ -15,6 +15,8 @@ class SnapshotOut(BaseModel):
     session_id: str
     student_id: str
     whiteboard_png: Optional[str] = None
+    full_page_png: Optional[str] = None
+    note: Optional[str] = None
     transcript_snippet: Optional[str] = None
     timestamp_ms: int
     ai_context_tag: Optional[str] = None

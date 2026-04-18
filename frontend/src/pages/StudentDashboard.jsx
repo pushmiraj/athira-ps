@@ -7,11 +7,15 @@ import BookingModal from '../components/dashboard/BookingModal'
 export default function StudentDashboard() {
     const { user, logout } = useAuthStore()
     const [sessions, setSessions] = useState([])
+    const [snapshots, setSnapshots] = useState([])
     const [showBooking, setShowBooking] = useState(false)
+    const [activeView, setActiveView] = useState('hub') // 'hub' or 'history'
     const navigate = useNavigate()
 
     useEffect(() => {
         api.get('/sessions').then(r => setSessions(r.data)).catch(() => { })
+        // Fetch all snapshots for the student
+        api.get('/snapshots/student/all').then(r => setSnapshots(r.data)).catch(() => { })
     }, [])
 
     async function handleBook(sessionData) {
@@ -39,10 +43,24 @@ export default function StudentDashboard() {
                 </div>
 
                 <nav className="flex flex-col gap-2">
-                    <button className="flex items-center gap-3 px-4 py-3 bg-white shadow-sm rounded-lg text-tertiary font-medium text-sm transition-all">
+                    <button
+                        onClick={() => setActiveView('hub')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                            activeView === 'hub'
+                                ? 'bg-white shadow-sm text-tertiary'
+                                : 'hover:bg-surface-container text-on-surface-variant hover:text-on-surface'
+                        }`}
+                    >
                         <span className="text-lg">⊞</span> Hub
                     </button>
-                    <button className="flex items-center gap-3 px-4 py-3 hover:bg-surface-container rounded-lg text-on-surface-variant hover:text-on-surface font-medium text-sm transition-all">
+                    <button
+                        onClick={() => setActiveView('history')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                            activeView === 'history'
+                                ? 'bg-white shadow-sm text-tertiary'
+                                : 'hover:bg-surface-container text-on-surface-variant hover:text-on-surface'
+                        }`}
+                    >
                         <span className="text-lg">📚</span> History
                     </button>
                     <button className="flex items-center gap-3 px-4 py-3 hover:bg-surface-container rounded-lg text-on-surface-variant hover:text-on-surface font-medium text-sm transition-all">
@@ -73,15 +91,23 @@ export default function StudentDashboard() {
                 {/* Header */}
                 <header className="px-10 py-8 flex items-center justify-between">
                     <div>
-                        <h1 className="headline-md text-on-surface">Ready to learn, {user?.name?.split(' ')[0]}?</h1>
-                        <p className="body-lg text-on-surface-variant mt-1">Book a session or join an upcoming atelier.</p>
+                        <h1 className="headline-md text-on-surface">
+                            {activeView === 'hub' ? `Ready to learn, ${user?.name?.split(' ')[0]}?` : 'Your Snapshot History'}
+                        </h1>
+                        <p className="body-lg text-on-surface-variant mt-1">
+                            {activeView === 'hub' ? 'Book a session or join an upcoming atelier.' : 'Review your captured moments from past sessions.'}
+                        </p>
                     </div>
-                    <button onClick={() => setShowBooking(true)} className="px-6 py-2.5 rounded-md font-semibold text-sm transition-all bg-tertiary text-white shadow-md hover:bg-[#004e3c]">
-                        + Book New
-                    </button>
+                    {activeView === 'hub' && (
+                        <button onClick={() => setShowBooking(true)} className="px-6 py-2.5 rounded-md font-semibold text-sm transition-all bg-tertiary text-white shadow-md hover:bg-[#004e3c]">
+                            + Book New
+                        </button>
+                    )}
                 </header>
 
                 <div className="px-10 pb-10 flex flex-col gap-10">
+                    {activeView === 'hub' ? (
+                        <>
                     
                     {/* Active Sessions Row */}
                     <section>
@@ -138,6 +164,69 @@ export default function StudentDashboard() {
                                     </div>
                                 ))}
                             </div>
+                        </section>
+                    )}
+                    </>
+                    ) : (
+                        /* Snapshot History View */
+                        <section>
+                            {snapshots.length === 0 ? (
+                                <div className="bg-surface-container py-20 rounded-2xl border border-dashed border-outline-variant text-center">
+                                    <p className="text-on-surface-variant text-lg">📸 No snapshots captured yet.</p>
+                                    <p className="text-on-surface-variant text-sm mt-2">Capture important moments during your sessions!</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {snapshots.map(snapshot => (
+                                        <div key={snapshot.id} className="bg-white rounded-2xl overflow-hidden ambient-shadow hover:translate-y-[-2px] transition-transform">
+                                            {/* Screenshot Preview */}
+                                            {snapshot.full_page_png && (
+                                                <div className="w-full aspect-video bg-surface-container-low overflow-hidden">
+                                                    <img
+                                                        src={snapshot.full_page_png}
+                                                        alt="Snapshot"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Snapshot Details */}
+                                            <div className="p-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-xs text-on-surface-variant font-mono">
+                                                        {new Date(snapshot.created_at).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="text-xs text-on-surface-variant">•</span>
+                                                    <span className="text-xs text-on-surface-variant">
+                                                        {new Date(snapshot.created_at).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+
+                                                {snapshot.note && (
+                                                    <p className="text-sm text-on-surface mb-3 line-clamp-2">
+                                                        {snapshot.note}
+                                                    </p>
+                                                )}
+
+                                                {snapshot.ai_context_tag && (
+                                                    <div className="text-xs text-tertiary bg-tertiary-container px-2 py-1 rounded-md inline-block">
+                                                        {snapshot.ai_context_tag}
+                                                    </div>
+                                                )}
+
+                                                {/* Download Button */}
+                                                <a
+                                                    href={snapshot.full_page_png}
+                                                    download={`snapshot-${snapshot.id}.png`}
+                                                    className="block mt-3 w-full py-2 text-center bg-surface-container-low hover:bg-surface-container text-on-surface text-sm font-medium rounded-lg transition-colors"
+                                                >
+                                                    Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     )}
                 </div>
