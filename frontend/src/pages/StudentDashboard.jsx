@@ -14,14 +14,23 @@ export default function StudentDashboard() {
     api.get('/sessions').then(r => setSessions(r.data)).catch(() => { })
   }, [])
 
+  const [bookingError, setBookingError] = useState(null)
+
   async function handleBook(sessionData) {
-    const { data } = await api.post('/sessions', sessionData)
-    setSessions(s => [...s, data])
-    api.post(`/diagnostic/${data.id}/generate`, {
-      topic: data.topic,
-      sub_topics: data.sub_topics || [],
-    }).catch(() => { })
-    setShowBooking(false)
+    setBookingError(null)
+    try {
+      const { data } = await api.post('/sessions', sessionData)
+      setSessions(s => [...s, data])
+      api.post(`/diagnostic/${data.id}/generate`, {
+        topic: data.topic,
+        sub_topics: data.sub_topics || [],
+      }).catch(() => { })
+      setShowBooking(false)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Booking failed. Please try again.'
+      setBookingError(msg)
+      alert('Booking Error: ' + msg)
+    }
   }
 
   const upcoming = sessions.filter(s => s.status === 'scheduled' || s.status === 'preflight' || s.status === 'live')
@@ -206,10 +215,10 @@ function SessionCard({ session: s, navigate }) {
         <button
           onClick={() => navigate(`/session/${s.id}`)}
           className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${s.status === 'live'
-              ? 'bg-green-600 text-white hover:bg-green-700 shadow-sm shadow-green-200'
-              : s.status === 'completed'
-                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                : 'text-white hover:opacity-90'
+            ? 'bg-green-600 text-white hover:bg-green-700 shadow-sm shadow-green-200'
+            : s.status === 'completed'
+              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              : 'text-white hover:opacity-90'
             }`}
           style={s.status !== 'live' && s.status !== 'completed' ? { background: 'linear-gradient(135deg, #2563EB, #7C3AED)' } : {}}>
           {s.status === 'live' ? '🔴 Join Live Session' : s.status === 'completed' ? 'View Study Pack' : 'Enter Session Room'}
