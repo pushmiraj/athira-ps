@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, sessions, diagnostic, snapshots, study_pack
+from app.routers import auth, sessions, diagnostic, snapshots, study_pack, code_execution
 from app.websocket.handler import router as ws_router
 
 
@@ -29,6 +29,7 @@ app.include_router(sessions.router, prefix="/sessions")
 app.include_router(diagnostic.router, prefix="/diagnostic")
 app.include_router(snapshots.router)   # routes already have /snapshots and /parked-questions prefixes
 app.include_router(study_pack.router, prefix="/study-pack")
+app.include_router(code_execution.router, prefix="/code")
 app.include_router(ws_router)
 
 

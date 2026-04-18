@@ -43,9 +43,9 @@ export const TRANSCRIPT_BROADCAST = 'TRANSCRIPT_BROADCAST'
 export const WHITEBOARD_DELTA = 'WHITEBOARD_DELTA'
 export const WHITEBOARD_UPDATE = 'WHITEBOARD_UPDATE'
 
-// ─── Text Editor ──────────────────────────────────────────────────────────
-export const TEXT_EDITOR_DELTA = 'TEXT_EDITOR_DELTA'
-export const TEXT_EDITOR_UPDATE = 'TEXT_EDITOR_UPDATE'
+// ─── Code Compiler ────────────────────────────────────────────────────
+export const CODE_EDITOR_UPDATE = 'CODE_EDITOR_UPDATE'
+export const CODE_OUTPUT_BROADCAST = 'CODE_OUTPUT_BROADCAST'
 
 // ─── WebRTC Signaling ─────────────────────────────────────────────────────
 export const WEBRTC_OFFER = 'WEBRTC_OFFER'

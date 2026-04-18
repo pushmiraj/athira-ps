@@ -18,6 +18,7 @@ import AnalogyPoll from '../components/session/analogy/AnalogyPoll'
 import VideoPane from '../components/session/video/VideoPane'
 import SharedWhiteboard from '../components/session/whiteboard/SharedWhiteboard'
 import SharedTextEditor from '../components/session/editor/SharedTextEditor'
+import CodeCompiler from '../components/session/compiler/CodeCompiler'
 import StudyPackModal from '../components/session/studypack/StudyPackModal'
 import TranscriptPanel from '../components/session/transcript/TranscriptPanel'
 
@@ -277,17 +278,17 @@ export default function SessionRoom() {
                 {/* Center Column: The Focus Well (Dark Mode) */}
                 <div className="flex-1 bg-inverse-surface rounded-2xl flex flex-col overflow-hidden relative ambient-shadow group ring-1 ring-white/5">
                     <div className="absolute top-4 left-4 z-10 flex gap-1.5 p-1 bg-black/40 backdrop-blur-md rounded-lg border border-white/10">
-                        {['editor', 'whiteboard'].map(tab => (
-                            <button 
-                                key={tab} 
+                        {['editor', 'whiteboard', 'compiler'].map(tab => (
+                            <button
+                                key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide uppercase transition-all ${
-                                    activeTab === tab 
-                                        ? 'bg-primary/90 text-white shadow-sm' 
+                                    activeTab === tab
+                                        ? 'bg-primary/90 text-white shadow-sm'
                                         : 'text-white/60 hover:text-white hover:bg-white/10'
                                 }`}
                             >
-                                {tab === 'whiteboard' ? 'Whiteboard' : 'Code Data'}
+                                {tab === 'whiteboard' ? 'Whiteboard' : tab === 'compiler' ? 'Compiler' : 'Code Data'}
                             </button>
                         ))}
                     </div>
@@ -298,6 +299,9 @@ export default function SessionRoom() {
                         </div>
                         <div className={activeTab === 'editor' ? 'absolute inset-0' : 'hidden'}>
                             <SharedTextEditor send={send} wsRef={wsRef} />
+                        </div>
+                        <div className={activeTab === 'compiler' ? 'absolute inset-0' : 'hidden'}>
+                            <CodeCompiler send={send} wsRef={wsRef} isTutor={isTutor} />
                         </div>
                     </div>
                 </div>

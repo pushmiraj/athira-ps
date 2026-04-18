@@ -116,6 +116,13 @@ async def websocket_endpoint(
                 case "TEXT_EDITOR_DELTA":
                     await manager.broadcast(session_id, "TEXT_EDITOR_UPDATE", payload, exclude_conn_id=user["conn_id"])
 
+                # ─── Code Compiler Syncing ─────────────
+                case "CODE_EDITOR_UPDATE":
+                    await manager.broadcast(session_id, "CODE_EDITOR_UPDATE", payload, exclude_conn_id=user["conn_id"])
+
+                case "CODE_OUTPUT_BROADCAST":
+                    await manager.broadcast(session_id, "CODE_OUTPUT_BROADCAST", payload, exclude_conn_id=user["conn_id"])
+
                 case _:
                     pass  # Unknown event — ignore
 
