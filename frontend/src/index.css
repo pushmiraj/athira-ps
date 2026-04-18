@@ -1,125 +1,109 @@
 @import "tailwindcss";
 
-:root {
-  /* Brand */
-  --accent:           #4F46E5;
-  --accent-dark:      #3730A3;
-  --accent-light:     #EEF2FF;
+@theme {
+  --color-background: #f8f9fa;
+  
+  /* Primary & Accents */
+  --color-primary: #4441cc;
+  --color-primary-container: #5e5ce6;
+  --color-tertiary: #00634e;
+  --color-tertiary-fixed: #6dfad2;
+  --color-primary-fixed: #e2dfff;
+  
+  /* Surfaces & Hierarchy */
+  --color-surface-container-low: #f3f4f5;
+  --color-surface-container: #edeeef;
+  --color-surface-container-highest: #e1e3e4;
+  --color-surface-container-lowest: #ffffff;
+  --color-inverse-surface: #2e3132;
+  
+  /* Text & On-Surfaces */
+  --color-on-surface: #191c1d;
+  --color-on-surface-variant: #464554;
+  
+  /* Lines & Structure */
+  --color-outline-variant: #c7c4d7;
+  
+  /* Status */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
 
-  /* Diagnostic colors */
-  --color-mastered:       #16A34A;
-  --color-lucky-guess:    #CA8A04;
-  --color-known-gap:      #DC2626;
-  --color-danger-zone:    #7C3AED;
-
-  /* Auth / Dashboard surfaces (stay light) */
-  --color-surface:        #F8FAFC;
-  --color-border:         #E2E8F0;
-  --color-text-primary:   #0F172A;
-  --color-text-secondary: #64748B;
-
-  /* ─── SESSION ROOM — Light Theme ─── */
-  --color-session-bg:        #F1F5F9;   /* soft blue-gray canvas */
-  --color-session-panel:     #FFFFFF;   /* white cards */
-  --color-session-border:    #CBD5E1;   /* slate-300 */
-  --color-session-text:      #1E293B;   /* slate-800 */
-  --color-session-muted:     #64748B;   /* slate-500 */
-  --color-session-header:    #FFFFFF;
-  --color-session-accent:    #4F46E5;
-  --color-session-accent-bg: #EEF2FF;
-
-  /* Panel shadow */
-  --panel-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
-  --panel-shadow-drag: 0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+  /* Typography */
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body antialiased selection:bg-primary-fixed selection:text-primary;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  
+  /* Headings map to Manrope by default */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-on-surface tracking-tight;
+  }
 
-body {
-  font-family: 'Inter', 'DM Sans', sans-serif;
-  color: var(--color-text-primary);
-  background: #fff;
-  -webkit-font-smoothing: antialiased;
+  /* Structural fixes - eliminate default 1px outlines on inputs/focus */
+  *:focus-visible {
+    outline: 2px solid theme('colors.primary');
+    outline-offset: 2px;
+  }
 }
 
-code, .mono { font-family: 'DM Mono', monospace; }
+@layer utilities {
+  .btn-gradient {
+    background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container'));
+    color: white;
+    @apply rounded-md font-medium text-xs tracking-wide transition-all duration-300;
+  }
 
-/* ── Panel card base ─────────────────────────────── */
-.panel-card {
-  background: var(--color-session-panel);
-  border: 1px solid var(--color-session-border);
-  border-radius: 16px;
-  box-shadow: var(--panel-shadow);
-  overflow: hidden;
-}
+  .btn-gradient:hover {
+    box-shadow: 0 4px 16px rgba(68, 65, 204, 0.4);
+    transform: translateY(-1px);
+  }
 
-/* ── Drag handle ─────────────────────────────────── */
-.drag-handle {
-  cursor: grab;
-  user-select: none;
-}
-.drag-handle:active { cursor: grabbing; }
+  .btn-secondary {
+    @apply bg-surface-container-low hover:bg-surface-container text-on-surface font-medium text-xs rounded-md transition-all duration-200 border-none;
+  }
 
-/* ── Resize handle (bottom-right corner) ────────── */
-.resize-handle {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  cursor: nwse-resize;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 4px;
-  z-index: 10;
-}
-.resize-handle::after {
-  content: '';
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid var(--color-session-border);
-  border-bottom: 2px solid var(--color-session-border);
-  border-radius: 0 0 3px 0;
+  .ambient-shadow {
+    box-shadow: 0 16px 32px rgba(25, 28, 29, 0.06);
+  }
+
+  .ghost-border {
+    border: 1px solid rgba(199, 196, 215, 0.15); /* outline-variant at 15% */
+  }
+
+  .ghost-border-b {
+    border-bottom: 1px solid rgba(199, 196, 215, 0.15);
+  }
+
+  /* Academic Atelier specific text hierarchy */
+  .display-lg { @apply font-display text-[3.5rem] font-bold leading-tight tracking-[-0.02em]; }
+  .headline-md { @apply font-display text-[1.75rem] font-semibold leading-snug tracking-[-0.01em]; }
+  .title-md { @apply font-body text-[1.125rem] font-semibold leading-normal; }
+  .body-lg { @apply font-body text-base font-normal leading-relaxed text-on-surface-variant; }
+  .label-md { @apply font-body text-[0.75rem] font-medium tracking-wide uppercase; }
 }
 
-/* ── Floating panel dragging state ──────────────── */
-.panel-dragging {
-  box-shadow: var(--panel-shadow-drag) !important;
-  opacity: 0.96;
-  transition: none !important;
-}
+/* Base custom scrollbar for dark areas */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-/* ── Whiteboard tool button ─────────────────────── */
-.wb-tool {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  color: var(--color-session-muted);
-  position: relative;
-}
-.wb-tool:hover { background: var(--color-session-accent-bg); color: var(--accent); }
-.wb-tool.active { background: var(--accent); color: #fff; }
+/* Base custom scrollbar for light areas */
+.custom-scrollbar-light::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar-light::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar-light::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+.custom-scrollbar-light::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.15); }
 
-/* ── Video control button ───────────────────────── */
-.vc-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  border: none;
-}
-.vc-btn:hover { transform: scale(1.08); }
+/* WebRTC Controls */
+.vc-btn { @apply w-12 h-12 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 backdrop-blur-md; }
+.vc-btn:hover { transform: scale(1.05); }
 .vc-btn:active { transform: scale(0.95); }
 
 /* ── Diagnostic animations ──────────────────────── */
@@ -134,9 +118,3 @@ code, .mono { font-family: 'DM Mono', monospace; }
   to   { transform: translateX(0);    opacity: 1; }
 }
 .slide-in-right { animation: slide-in-right 0.3s ease-out; }
-
-@keyframes panel-pop {
-  from { transform: scale(0.97); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-.panel-pop { animation: panel-pop 0.2s ease-out; }

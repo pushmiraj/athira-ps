@@ -14,6 +14,10 @@ export default function useTranscript(send) {
 
   const startListening = useCallback(() => {
     console.log('[Transcript] Attempting to start SpeechRecognition...')
+    if (recognitionRef.current) {
+      console.log('[Transcript] Already listening or pending restart. Ignoring concurrent start.')
+      return
+    }
     setError(null)   // clear previous error on new attempt
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {

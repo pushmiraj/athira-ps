@@ -28,17 +28,12 @@ export default function SharedTextEditor({ send, wsRef }) {
     }
 
     return (
-        <div className="flex flex-col h-full relative" style={{ background: '#fff' }}>
-            <div style={{ position: 'absolute', top: 10, right: 14, fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>
-                📝 Shared — edits sync in real-time
+        <div className="flex flex-col h-full relative bg-transparent">
+            <div className="absolute top-2 right-4 text-[10px] text-white/40 font-mono tracking-widest uppercase pointers-none">
+                Shared Space
             </div>
             <textarea
-                style={{
-                    flex: 1, width: '100%', background: 'transparent',
-                    color: '#1e293b', outline: 'none', padding: '40px 16px 16px',
-                    resize: 'none', fontFamily: 'DM Mono, monospace', fontSize: 14,
-                    lineHeight: 1.7, border: 'none',
-                }}
+                className="flex-1 w-full bg-transparent text-white/90 outline-none p-12 resize-none custom-scrollbar font-mono text-sm leading-8"
                 placeholder="Start typing — both student and tutor will see this..."
                 value={editorText}
                 onChange={handleChange}
