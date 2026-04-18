@@ -127,7 +127,8 @@ export default function SessionRoom() {
     api.get(`/sessions/${id}`)
       .then(r => {
         setSession(r.data); setLoading(false)
-        if (r.data.status === 'preflight' || r.data.status === 'live') setStatus(r.data.status)
+        // Always reflect the real status from the database
+        setStatus(r.data.status)
       })
       .catch(() => navigate('/dashboard'))
   }, [id])
