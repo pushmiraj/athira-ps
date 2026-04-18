@@ -240,6 +240,8 @@ async def handle_snapshot(data: dict, session_id: str, user: dict):
     from app.services.analogy_service import generate_context_tag
     payload = data.get("payload", {})
     whiteboard_png = payload.get("whiteboard_png")
+    full_page_png = payload.get("full_page_png")  # Add full page screenshot
+    note = payload.get("note", "")  # Add student's note
     transcript_snippet = payload.get("transcript_snippet", "")
     timestamp_ms = payload.get("timestamp_ms", int(time.time() * 1000))
 
@@ -251,6 +253,8 @@ async def handle_snapshot(data: dict, session_id: str, user: dict):
             session_id=session_id,
             student_id=user["id"],
             whiteboard_png=whiteboard_png,
+            full_page_png=full_page_png,
+            note=note,
             transcript_snippet=transcript_snippet,
             timestamp_ms=timestamp_ms,
             ai_context_tag=context_tag,

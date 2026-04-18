@@ -128,7 +128,8 @@ export default function SessionRoom() {
     api.get(`/sessions/${id}`)
       .then(r => {
         setSession(r.data); setLoading(false)
-        if (r.data.status === 'preflight' || r.data.status === 'live') setStatus(r.data.status)
+        // Always reflect the real status from the database
+        setStatus(r.data.status)
       })
       .catch(() => navigate('/dashboard'))
   }, [id])
@@ -220,141 +221,133 @@ export default function SessionRoom() {
     </div>
   )
 
-  // ── LIVE SESSION — floating panel canvas ─────────────────────────────────────
-  return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f1f5f9', overflow: 'hidden' }}>
-      {/* ── Session Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px', background: '#fff', borderBottom: '1px solid #e2e8f0', flexShrink: 0, zIndex: 200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
-          <span style={{ fontWeight: 700, fontSize: 17, color: '#1e293b' }}>{session?.topic || 'Session'}</span>
+    // ── LIVE SESSION — 3-Column Asymmetric Canvas (Academic Atelier) ──
+    return (
+        <div className="h-screen flex flex-col bg-background overflow-hidden relative">
+            {/* ── Session Header ── */}
+            <div className="flex items-center gap-4 px-6 py-4 bg-background z-20 shrink-0 ghost-border-b">
+                <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-error animate-pulse" />
+                    <span className="font-display font-semibold text-lg text-on-surface tracking-tight">{session?.topic || 'Session'}</span>
+                </div>
+                
+                <div className="flex-1 px-8 overflow-hidden flex justify-center">
+                    {lastSegment && (
+                        <p className="text-on-surface-variant text-sm overflow-hidden text-ellipsis whitespace-nowrap font-medium max-w-2xl bg-surface-container-highest/30 px-4 py-1.5 rounded-full">
+                            <span className={lastSegment.speaker_role === 'tutor' ? 'text-primary mr-2' : 'text-tertiary mr-2'}>
+                                {lastSegment.speaker_role === 'tutor' ? 'Tutor:' : 'Student:'}
+                            </span>
+                            {lastSegment.processed_text || lastSegment.text}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <span className="font-mono text-on-surface-variant font-medium tracking-widest">{formatTime(elapsedMs)}</span>
+                    {isTutor && (
+                        <button onClick={handleEndSession} className="px-5 py-2 min-h-0 btn-secondary !bg-error-container !text-error font-bold !text-xs uppercase tracking-wide">
+                            End Session
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* ── 3-Column Studio Layout ── */}
+            <div className="flex-1 flex overflow-hidden p-2 gap-2">
+                
+                {/* Left Column: Intelligence / Context */}
+                <div className="w-80 flex flex-col gap-2 rounded-2xl overflow-hidden shrink-0">
+                    <div className="flex-1 bg-surface-container-low rounded-2xl overflow-y-auto custom-scrollbar-light relative group">
+                        <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-surface-container-low to-transparent z-10 pointers-none flex items-center gap-2">
+                            <span className="text-xl">🧠</span>
+                            <span className="font-display font-bold text-sm text-on-surface tracking-wide uppercase">Intelligence</span>
+                        </div>
+                        <div className="pt-16 pb-4 h-full">
+                            {isStudent ? (
+                                <Sidecar send={send} getWhiteboardPng={() => whiteboardPngRef.current?.()} />
+                            ) : (
+                                <div className="flex flex-col gap-0 h-full">
+                                    <div className="shrink-0"><ProficiencyDashboard /></div>
+                                    <div className="flex-1 min-h-0"><AnalogyPanel send={send} /></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Center Column: The Focus Well (Dark Mode) */}
+                <div className="flex-1 bg-inverse-surface rounded-2xl flex flex-col overflow-hidden relative ambient-shadow group ring-1 ring-white/5">
+                    <div className="absolute top-4 left-4 z-10 flex gap-1.5 p-1 bg-black/40 backdrop-blur-md rounded-lg border border-white/10">
+                        {['editor', 'whiteboard', 'compiler'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-4 py-1.5 rounded-md text-xs font-semibold tracking-wide uppercase transition-all ${
+                                    activeTab === tab
+                                        ? 'bg-primary/90 text-white shadow-sm'
+                                        : 'text-white/60 hover:text-white hover:bg-white/10'
+                                }`}
+                            >
+                                {tab === 'whiteboard' ? 'Whiteboard' : tab === 'compiler' ? 'Compiler' : 'Code Data'}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 relative w-full h-full pt-16 rounded-b-2xl overflow-hidden">
+                        <div className={activeTab === 'whiteboard' ? 'absolute inset-0' : 'hidden'}>
+                            <SharedWhiteboard send={send} wsRef={wsRef} getRef={whiteboardPngRef} />
+                        </div>
+                        <div className={activeTab === 'editor' ? 'absolute inset-0' : 'hidden'}>
+                            <SharedTextEditor send={send} wsRef={wsRef} />
+                        </div>
+                        <div className={activeTab === 'compiler' ? 'absolute inset-0' : 'hidden'}>
+                            <CodeCompiler send={send} wsRef={wsRef} isTutor={isTutor} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Communications */}
+                <div className="w-80 flex flex-col gap-2 shrink-0">
+                    {/* Video Block */}
+                    <div className="h-[360px] bg-[#1a1b1e] rounded-2xl overflow-hidden relative group shrink-0 ring-1 ring-white/5 shadow-inner">
+                         <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-black/50 backdrop-blur border border-white/10 rounded-md">
+                            <span className="text-[10px] uppercase font-bold text-white/80 tracking-widest">Presence</span>
+                        </div>
+                        <VideoPane send={send} wsRef={wsRef} onCallStarted={handleCallStarted} onMuteChange={handleMuteChange} />
+                    </div>
+
+                    {/* Transcript Block */}
+                    {isStudent && (
+                        <div className="flex-1 bg-surface-container-low rounded-2xl overflow-hidden flex flex-col relative">
+                            <div className="flex items-center justify-between p-4 bg-surface-container-lowest ghost-border-b z-10 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl">🎙</span>
+                                    <span className="font-display font-bold text-sm text-on-surface tracking-wide uppercase">Transcript</span>
+                                </div>
+                                <button 
+                                    onClick={isListening ? stopListening : startListening}
+                                    className={`px-3 py-1 rounded text-xs font-bold uppercase transition-colors ${
+                                      isListening ? 'bg-error-container text-error' : 'bg-surface-container text-on-surface hover:bg-outline-variant'
+                                    }`}
+                                >
+                                    {isListening ? 'Stop' : 'Start'}
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar-light relative">
+                                {isListening && (
+                                    <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_8px_rgba(186,26,26,0.6)]" />
+                                )}
+                                <div className="p-2"><TranscriptPanel interimText={interimText} error={transcriptError} /></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Overlays */}
+            {isTutor && <TutorIntentToast send={send} />}
+            {isStudent && <AnalogyPoll send={send} />}
+            {showStudyPack && isStudent && <StudyPackModal sessionId={id} onClose={() => setShowStudyPack(false)} />}
         </div>
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          {lastSegment && (
-            <p style={{ color: '#94a3b8', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
-              <span style={{ color: lastSegment.speaker_role === 'tutor' ? '#4f46e5' : '#16a34a', fontWeight: 600, fontStyle: 'normal' }}>
-                {lastSegment.speaker_role === 'tutor' ? 'Tutor' : 'Student'}:{' '}
-              </span>
-              {lastSegment.processed_text || lastSegment.text}
-            </p>
-          )}
-        </div>
-        <span style={{ fontFamily: 'monospace', fontSize: 15, color: '#64748b', fontWeight: 600 }}>{formatTime(elapsedMs)}</span>
-        {isTutor && (
-          <button onClick={handleEndSession}
-            style={{ padding: '8px 18px', background: '#fef2f2', color: '#ef4444', border: '1.5px solid #fca5a5', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-            End Session
-          </button>
-        )}
-      </div>
-
-      {/* ── Free floating canvas ── */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        {/* ── Video Panel ── */}
-        <FloatingPanel
-          id="panel-video"
-          title="Video" icon="🎥"
-          defaultPos={{ x: 20, y: 16 }}
-          defaultSize={{ w: 380, h: 320 }}
-          minWidth={280} minHeight={220}
-        >
-          <VideoPane send={send} wsRef={wsRef} onCallStarted={handleCallStarted} onMuteChange={handleMuteChange} />
-        </FloatingPanel>
-
-        {/* ── Workspace Panel (Whiteboard + Editor + Code Compiler) ── */}
-        <FloatingPanel
-          id="panel-workspace"
-          title={activeTab === 'whiteboard' ? 'Whiteboard' : activeTab === 'editor' ? 'Text Editor' : 'Code Compiler'}
-          icon={activeTab === 'whiteboard' ? '✏️' : activeTab === 'editor' ? '📝' : '💻'}
-          defaultPos={{ x: 420, y: 16 }}
-          defaultSize={{ w: 720, h: 580 }}
-          minWidth={500} minHeight={400}
-          headerRight={
-            <div className="no-drag" style={{ display: 'flex', gap: 4 }}>
-              {['whiteboard', 'editor', 'compiler'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '4px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                    background: activeTab === tab ? '#4f46e5' : '#f1f5f9',
-                    color: activeTab === tab ? '#fff' : '#64748b',
-                  }}>
-                  {tab === 'whiteboard' ? '✏️ Whiteboard' : tab === 'editor' ? '📝 Editor' : '💻 Compiler'}
-                </button>
-              ))}
-            </div>
-          }
-        >
-          <div style={{ height: '100%', position: 'relative' }}>
-            <div style={{ display: activeTab === 'whiteboard' ? 'flex' : 'none', height: '100%' }}>
-              <SharedWhiteboard send={send} wsRef={wsRef} getRef={whiteboardPngRef} />
-            </div>
-            <div style={{ display: activeTab === 'editor' ? 'block' : 'none', height: '100%' }}>
-              <SharedTextEditor send={send} wsRef={wsRef} />
-            </div>
-            <div style={{ display: activeTab === 'compiler' ? 'block' : 'none', height: '100%' }}>
-              <CodeCompiler send={send} wsRef={wsRef} isTutor={isTutor} />
-            </div>
-          </div>
-        </FloatingPanel>
-
-        {/* ── Right panel: Sidecar (student) or Proficiency+Analogy (tutor) ── */}
-        <FloatingPanel
-          id="panel-sidecar"
-          title={isStudent ? 'Workspace' : 'Dashboard'}
-          icon={isStudent ? '📚' : '📊'}
-          defaultPos={{ x: 1080, y: 16 }}
-          defaultSize={{ w: 300, h: 480 }}
-          minWidth={260} minHeight={320}
-        >
-          <div style={{ height: '100%', overflowY: 'auto' }}>
-            {isStudent ? (
-              <Sidecar send={send} getWhiteboardPng={() => whiteboardPngRef.current?.()} />
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                <ProficiencyDashboard />
-                <AnalogyPanel send={send} />
-              </div>
-            )}
-          </div>
-        </FloatingPanel>
-
-        {/* ── Transcript Panel (student only) ── */}
-        {isStudent && (
-          <FloatingPanel
-            id="panel-transcript"
-            title="Transcript"
-            icon="🎙"
-            defaultPos={{ x: 20, y: 352 }}
-            defaultSize={{ w: 380, h: 240 }}
-            minWidth={260} minHeight={160}
-            headerRight={
-              <button className="no-drag" onClick={isListening ? stopListening : startListening}
-                style={{
-                  padding: '4px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: isListening ? '#fef2f2' : '#f0fdf4',
-                  color: isListening ? '#ef4444' : '#16a34a',
-                }}>
-                {isListening ? '⏹ Stop' : '🎙 Start'}
-              </button>
-            }
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderBottom: '1px solid #f1f5f9' }}>
-              {isListening && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1s infinite' }} />}
-            </div>
-            <TranscriptPanel interimText={interimText} error={transcriptError} />
-          </FloatingPanel>
-        )}
-      </div>
-
-      {/* Overlays */}
-      {isTutor && <TutorIntentToast send={send} />}
-      {isStudent && <AnalogyPoll send={send} />}
-      {showStudyPack && isStudent && <StudyPackModal sessionId={id} onClose={() => setShowStudyPack(false)} />}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-      `}</style>
-    </div>
-  )
+    )
 }

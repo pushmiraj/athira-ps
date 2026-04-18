@@ -3,7 +3,7 @@ import TrafficLight from './TrafficLight'
 import ConfidenceMatrix from './ConfidenceMatrix'
 
 export default function ProficiencyDashboard() {
-  const { proficiency, sessionContract } = useSessionStore()
+  const { proficiency, sessionContract, status } = useSessionStore()
 
   if (proficiency.length === 0) {
     return (
@@ -12,13 +12,17 @@ export default function ProficiencyDashboard() {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Proficiency Dashboard</h3>
         </div>
         <div className="text-center py-8">
-          <div className="text-2xl mb-2">⏳</div>
-          <p className="text-xs text-slate-500">Waiting for student to complete check-in…</p>
-          <div className="flex items-center justify-center gap-1 mt-3">
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
+          <div className="text-2xl mb-2">{status === 'preflight' ? '⏳' : '📊'}</div>
+          <p className="text-xs text-slate-500">
+            {status === 'preflight' ? 'Waiting for student to complete check-in…' : 'No proficiency data generated for this session.'}
+          </p>
+          {status === 'preflight' && (
+            <div className="flex items-center justify-center gap-1 mt-3">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          )}
         </div>
       </div>
     )
